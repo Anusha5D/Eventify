@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'https://eventify-qf4e.onrender.com',
+    baseURL: 'https://eventify-qf4e.onrender.com/api',
 });
 
 api.interceptors.request.use((config) => {
