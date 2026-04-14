@@ -63,7 +63,7 @@ const AdminDashboard = () => {
 
     const handleConfirmBooking = async (id, paymentStatus) => {
         try {
-            await api.put(`/bookings/${id}/confirm`, { paymentStatus });
+            await api.post(`/bookings/${id}/confirm`, { paymentStatus });
             fetchData();
         } catch (error) {
             alert(error.response?.data?.message || 'Error confirming booking');

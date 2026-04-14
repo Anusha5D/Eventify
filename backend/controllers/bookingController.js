@@ -6,6 +6,7 @@ import { sendBookingEmail, sendOTPEmail } from '../utils/email.js';
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
+//1 step otp genearted and sent to user email when i click on book button
 export const sendBookingOTP = async (req, res) => {
     try
     {
@@ -13,6 +14,7 @@ export const sendBookingOTP = async (req, res) => {
         await OTP.findOneAndDelete({ email: req.user.email, action: 'booking_confirmation' });
         await OTP.create({ email: req.user.email, otp, action: 'booking_confirmation' });
         await sendOTPEmail(req.user.email, otp, 'booking_confirmation');
+        console.log(`OTP for booking confirmation sent to ${req.user.email}: ${otp}`);
         res.status(200).json({ message: 'OTP sent to your email for booking confirmation.' });
     } 
     catch(error)
@@ -23,6 +25,7 @@ export const sendBookingOTP = async (req, res) => {
         
 }
 
+//2 email wala otp verify hone ke liye daalte hai
 //yaha verify karna hai ki jo otp user ne dala hai wo sahi hai ya nahi, agar sahi hai to booking confirm kar deni hai, aur email bhejna hai user ko booking confirmation ka.
 export const bookEvent=async(req,res)=>
 {
@@ -59,7 +62,7 @@ export const bookEvent=async(req,res)=>
             eventId,
             status: 'pending',
             paymentStatus: 'not_paid',
-            amount: event.ticketPrice});
+            amount: event.ticketPrice || 0  });
         
         //validOTP._id is used to uniquely identify the OTP document in the database. By deleting the OTP document after it has been used for booking confirmation, we ensure that the same OTP cannot be reused for another booking, thus enhancing security.
         await OTP.deleteOne({ _id: validOTP._id });
@@ -75,11 +78,14 @@ export const bookEvent=async(req,res)=>
     }
 }
 
+//3 admin jab booking confirm karega to uske liye ek endpoint hoga jisme admin booking id aur payment status dega, uske basis par booking confirm karni hai, aur user ko email bhejna hai ki aapki booking confirm ho chuki hai.
 export const confirmBooking = async (req, res) => {
     try
     {
     
-      const { paymentStatus } = req.body; // 'paid' or 'not_paid'
+      const { paymentStatus } = req.body; // this req is made by admin 
+
+      console.log(req.body); 
         const booking = await Booking.findById(req.params.id).populate('userId').populate('eventId');
         if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
@@ -91,9 +97,11 @@ export const confirmBooking = async (req, res) => {
         }
 
         booking.status = 'confirmed';
+        // Payment status update is optional and can be handled separately if needed, but we can allow admin to set it during confirmation if desired.
         if (paymentStatus) {
             booking.paymentStatus = paymentStatus;
         }
+        
         await booking.save();
 
         event.availableSeats -= 1;
@@ -104,6 +112,7 @@ export const confirmBooking = async (req, res) => {
 
         res.json({ message: 'Booking confirmed successfully', booking });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
@@ -115,6 +124,7 @@ export const getMyBookings = async (req, res) => {
             : await Booking.find({ userId: req.user.id }).populate('eventId').sort({ createdAt: -1 });
         res.json(bookings);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
@@ -144,6 +154,7 @@ export const cancelBooking = async (req, res) => {
 
         res.json({ message: 'Booking cancelled successfully' });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
